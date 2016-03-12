@@ -37,14 +37,14 @@ float R; // equation for dimming curve
 MySensor gw;	
    
 // Stores the current color settings
-int channels[4] = {RED_PIN, GREEN_PIN, BLUE_PIN, WHITE_PIN};
-int values[4] = {100, 100, 100, 100};
-int target_values[4] = {100, 100, 100, 100}; 
+byte channels[4] = {RED_PIN, GREEN_PIN, BLUE_PIN, WHITE_PIN};
+byte values[4] = {100, 100, 100, 100};
+byte target_values[4] = {100, 100, 100, 100}; 
 
 
 // stores dimming level
-int dimming = 100;
-int target_dimming = 100;
+byte dimming = 100;
+byte target_dimming = 100;
 
 // tracks if the strip should be on of off
 boolean isOn = true;
@@ -65,7 +65,7 @@ void setup()
 
   // Set all channels to output (pin number, type)
   for (int i = 0; i < NUM_CHANNELS; i++) {
-    pinMode(i, OUTPUT);
+    pinMode(channels[i], OUTPUT);
   }
 
   // set up dimming
@@ -108,19 +108,19 @@ void incomingMessage(const MyMessage &message) {
   }
   
   // new dim level
-  else if (message.type==V_DIMMER) {
+  else if (message.type == V_DIMMER) {
       Serial.println("Dimming to ");
       Serial.println(message.getString());
       target_dimming = message.getByte();
   }
 
   // on / off message
-  else if (message.type==V_STATUS) {
+  else if (message.type == V_STATUS) {
     Serial.print("Turning light ");
 
     isOn = message.getInt();
 
-    if (message.getInt()) {
+    if (isOn) {
       Serial.println("on");
     } else {
       Serial.println("off");
@@ -150,7 +150,7 @@ void updateLights() {
   //Serial.println("+++++++++++++++");
 
   // for each color
-  for (int v = 0; v <= NUM_CHANNELS; v++) {
+  for (int v = 0; v < NUM_CHANNELS; v++) {
 
     if (values[v] < target_values[v]) {
       values[v] += STEP;
@@ -208,9 +208,9 @@ void updateLights() {
 }
 
 // converts incoming color string to actual (int) values
-// ATTENTION this currently does nearly no checks, so the format needs to be exaclty like domoticz sends the strings
+// ATTENTION this currently does nearly no checks, so the format needs to be exactly like domoticz sends the strings
 void inputToRGBW(const char * input) {
-  Serial.print("Got color value of lentht: "); 
+  Serial.print("Got color value of length: "); 
   Serial.println(strlen(input));
   
   if (strlen(input) == 6) {
