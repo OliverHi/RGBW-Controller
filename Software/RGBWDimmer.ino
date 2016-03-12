@@ -3,15 +3,15 @@ Based on the MySensors Project: http://www.mysensors.org
 
 This sketch controls a (analog)RGBW strip by listening to new color values from a (domoticz) controller and then fading to the new color.
 
-Version 0.8 - Oliver Hilsky
+Version 0.9 - Oliver Hilsky
 
 TODO
 safe/request values after restart/loss of connection
 */
 
 
-#define SN   "RGBW Led strip"
-#define SV   "v0.8"
+#define SN   "RGBW Led strip testSketch 3"
+#define SV   "v0.9"
 
 // Load mysensors library	
 #include <MySensor.h>	
@@ -23,33 +23,39 @@ safe/request values after restart/loss of connection
 #define WHITE_PIN 4	
 #define GREEN_PIN 5
 #define BLUE_PIN 6
+#define NUM_CHANNELS 4 // how many channels, RGBW=4 RGB=3...
+
 #define SENSOR_ID 1
 
 // Smooth stepping between the values
 #define STEP 1
 #define INTERVAL 10
+const int pwmIntervals = 255;
+float R; // equation for dimming curve
+
 
 MySensor gw;	
    
 // Stores the current color settings
-// TODO random start values => save & load them
-int redval = 100;
-int greenval = 100;
-int blueval = 100;
-int whiteval = 100;
+int channels[4] = {RED_PIN, GREEN_PIN, BLUE_PIN, WHITE_PIN};
+int values[4] = {100, 100, 100, 100};
+int target_values[4] = {100, 100, 100, 100}; 
+
+
+// stores dimming level
 int dimming = 100;
-int target_redval = 100;
-int target_greenval = 100;
-int target_blueval = 100;
-int target_whiteval = 100;
 int target_dimming = 100;
+
+// tracks if the strip should be on of off
 boolean isOn = true;
+
+// time tracking for updates
 unsigned long lastupdate = millis();
      
 void setup() 
 {
-  // Initializes the sensor node (with callback function for incoming messages
-  gw.begin(incomingMessage);		
+  // Initializes the sensor node (with callback function for incoming messages)
+  gw.begin(incomingMessage, 123);	// 123 = node id for testing	
        
   // Present sketch (name, version)
   gw.sendSketchInfo(SN, SV);				
@@ -57,11 +63,13 @@ void setup()
   // Register sensors (id, type, description, ack back)
   gw.present(SENSOR_ID, S_RGBW_LIGHT, "RGBW test light", true);
 
-  // Define pin mode (pin number, type)
-  pinMode(RED_PIN, OUTPUT);		
-  pinMode(GREEN_PIN, OUTPUT);
-  pinMode(BLUE_PIN, OUTPUT);
-  pinMode(WHITE_PIN, OUTPUT);
+  // Set all channels to output (pin number, type)
+  for (int i = 0; i < NUM_CHANNELS; i++) {
+    pinMode(i, OUTPUT);
+  }
+
+  // set up dimming
+  R = (pwmIntervals * log10(2))/(log10(255));
 
   // init lights
   updateLights();
@@ -70,7 +78,7 @@ void setup()
   if (isOn) {
     Serial.println("RGBW is running...");
   }
-
+ 
   Serial.println("Waiting for messages...");  
 }
 
@@ -130,70 +138,32 @@ void incomingMessage(const MyMessage &message) {
 void updateLights() {  
 
   // update pin values -debug
-  Serial.println(greenval);
-  Serial.println(redval);
-  Serial.println(blueval);
-  Serial.println(whiteval);
+  //Serial.println(greenval);
+  //Serial.println(redval);
+  //Serial.println(blueval);
+  //Serial.println(whiteval);
 
-  Serial.println(target_greenval);
-  Serial.println(target_redval);
-  Serial.println(target_blueval);
-  Serial.println(target_whiteval);
-  Serial.println("+++++++++++++++");
+  //Serial.println(target_greenval);
+  //Serial.println(target_redval);
+  //Serial.println(target_blueval);
+  //Serial.println(target_whiteval);
+  //Serial.println("+++++++++++++++");
 
-  // red
-  if (redval < target_redval) {
-    redval += STEP;
-    if (redval > target_redval) {
-      redval = target_redval;
-    }
-  }
-  if (redval > target_redval) {
-    redval -= STEP;
-    if (redval < target_redval) {
-      redval = target_redval;
-    }
-  }
+  // for each color
+  for (int v = 0; v <= NUM_CHANNELS; v++) {
 
-  // green
-  if (greenval < target_greenval) {
-    greenval += STEP;
-    if (greenval > target_greenval) {
-      greenval = target_greenval;
+    if (values[v] < target_values[v]) {
+      values[v] += STEP;
+      if (values[v] > target_values[v]) {
+        values[v] = target_values[v];
+      }
     }
-  }
-  if (greenval > target_greenval) {
-    greenval -= STEP;
-    if (greenval < target_greenval) {
-      greenval = target_greenval;
-    }
-  }
 
-  // blue
-  if (blueval < target_blueval) {
-    blueval += STEP;
-    if (blueval > target_blueval) {
-      blueval = target_blueval;
-    }
-  }
-  if (blueval > target_blueval) {
-    blueval -= STEP;
-    if (blueval < target_blueval) {
-      blueval = target_blueval;
-    }
-  }
-
-  // white
-  if (whiteval < target_whiteval) {
-    whiteval += STEP;
-    if (whiteval > target_whiteval) {
-      whiteval = target_whiteval;
-    }
-  }
-  if (whiteval > target_whiteval) {
-    whiteval -= STEP;
-    if (whiteval < target_whiteval) {
-      whiteval = target_whiteval;
+    if (values[v] > target_values[v]) {
+      values[v] -= STEP;
+      if (values[v] < target_values[v]) {
+        values[v] = target_values[v];
+      }
     }
   }
 
@@ -211,6 +181,7 @@ void updateLights() {
     }
   }
 
+  /*
   // debug - new values
   Serial.println(greenval);
   Serial.println(redval);
@@ -222,18 +193,17 @@ void updateLights() {
   Serial.println(target_blueval);
   Serial.println(target_whiteval);
   Serial.println("+++++++++++++++");
+  */
 
   // set actual pin values
-  if (isOn) {
-    analogWrite(RED_PIN, dimming / 100.0 * redval);     
-    analogWrite(GREEN_PIN, dimming / 100.0 * greenval);
-    analogWrite(BLUE_PIN, dimming / 100.0 * blueval);
-    analogWrite(WHITE_PIN, dimming / 100.0 * whiteval);
-  } else {
-    analogWrite(RED_PIN, 0);    
-    analogWrite(GREEN_PIN, 0);
-    analogWrite(BLUE_PIN, 0);
-    analogWrite(WHITE_PIN, 0);
+  for (int i = 0; i < NUM_CHANNELS; i++) {
+    if (isOn) {
+      //analogWrite(channels[i], dimming / 100 * values[i]);
+      // non linear fading, idea from https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/
+      analogWrite(channels[i], pow (2, (values[i] / R)) - 1);
+    } else {
+      analogWrite(channels[i], 0);
+    }
   }
 }
 
@@ -245,29 +215,32 @@ void inputToRGBW(const char * input) {
   
   if (strlen(input) == 6) {
     Serial.println("new rgb value");
-    target_redval   = fromhex (& input [0]);
-    target_greenval = fromhex (& input [2]);
-    target_blueval  = fromhex (& input [4]);
-    target_whiteval = 0;
+    target_values[0] = fromhex (& input [0]);
+    target_values[1] = fromhex (& input [2]);
+    target_values[2] = fromhex (& input [4]);
+    target_values[3] = 0;
   } else if (strlen(input) == 9) {
     Serial.println("new rgbw value");
-    target_redval   = fromhex (& input [1]); // ignore # as first sign
-    target_greenval = fromhex (& input [3]);
-    target_blueval  = fromhex (& input [5]);
-    target_whiteval = fromhex (& input [7]);
+    target_values[0] = fromhex (& input [1]); // ignore # as first sign
+    target_values[1] = fromhex (& input [3]);
+    target_values[2] = fromhex (& input [5]);
+    target_values[3] = fromhex (& input [7]);
   } else {
     Serial.println("Wrong length of input");
   }  
 
-/*
-  Serial.println("New color values: ");
+
+  Serial.print("New color values: ");
   Serial.println(input);
-  Serial.println(redval);
-  Serial.println(greenval);
-  Serial.println(blueval);
-  Serial.println(whiteval);
+  
+  for (int i = 0; i < NUM_CHANNELS; i++) {
+    Serial.print(target_values[i]);
+    Serial.print(", ");
+  }
+ 
+  Serial.println("");
+  Serial.print("Dimming: ");
   Serial.println(dimming);
-  */
 }
 
 // converts hex char to byte
