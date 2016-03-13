@@ -43,8 +43,8 @@ byte target_values[4] = {100, 100, 100, 100};
 
 
 // stores dimming level
-byte dimming = 100;
-byte target_dimming = 100;
+float dimming = 100;
+float target_dimming = 100;
 
 // tracks if the strip should be on of off
 boolean isOn = true;
@@ -111,7 +111,7 @@ void incomingMessage(const MyMessage &message) {
   else if (message.type == V_DIMMER) {
       Serial.println("Dimming to ");
       Serial.println(message.getString());
-      target_dimming = message.getByte();
+      target_dimming = message.getFloat();
   }
 
   // on / off message
