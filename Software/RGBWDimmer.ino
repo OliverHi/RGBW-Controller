@@ -20,7 +20,7 @@ safe/request values after restart/loss of connection
 
 // Arduino pin attached to driver pins
 #define RED_PIN 3 
-#define WHITE_PIN 4	
+#define WHITE_PIN 4	// this is not a pwm pin! change it if you want pwm
 #define GREEN_PIN 5
 #define BLUE_PIN 6
 #define NUM_CHANNELS 4 // how many channels, RGBW=4 RGB=3...
@@ -43,8 +43,8 @@ byte target_values[4] = {100, 100, 100, 100};
 
 
 // stores dimming level
-float dimming = 100;
-float target_dimming = 100;
+byte dimming = 100;
+byte target_dimming = 100;
 
 // tracks if the strip should be on of off
 boolean isOn = true;
@@ -55,13 +55,16 @@ unsigned long lastupdate = millis();
 void setup() 
 {
   // Initializes the sensor node (with callback function for incoming messages)
-  gw.begin(incomingMessage, 123);	// 123 = node id for testing	
+  gw.begin(incomingMessage);	// 123 = node id for testing	
        
   // Present sketch (name, version)
   gw.sendSketchInfo(SN, SV);				
        
   // Register sensors (id, type, description, ack back)
   gw.present(SENSOR_ID, S_RGBW_LIGHT, "RGBW test light", true);
+
+  // request current values from gateway/controller
+  //gw.request(SENSOR_ID, S_RGBW_LIGHT);
 
   // Set all channels to output (pin number, type)
   for (int i = 0; i < NUM_CHANNELS; i++) {
@@ -111,7 +114,7 @@ void incomingMessage(const MyMessage &message) {
   else if (message.type == V_DIMMER) {
       Serial.println("Dimming to ");
       Serial.println(message.getString());
-      target_dimming = message.getFloat();
+      target_dimming = message.getByte();
   }
 
   // on / off message
@@ -198,7 +201,8 @@ void updateLights() {
   // set actual pin values
   for (int i = 0; i < NUM_CHANNELS; i++) {
     if (isOn) {
-      //analogWrite(channels[i], dimming / 100 * values[i]);
+      // normal fading
+      // analogWrite(channels[i], dimming / 100 * values[i]);
       // non linear fading, idea from https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/
       analogWrite(channels[i], pow (2, (values[i] / R)) - 1);
     } else {
