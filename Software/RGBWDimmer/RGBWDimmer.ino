@@ -3,6 +3,7 @@ Based on the MySensors Project: http://www.mysensors.org
 
 This sketch controls a (analog)RGBW strip by listening to new color values from a (domoticz) controller and then fading to the new color.
 
+Version 1.0 - Changed pins and gw definition
 Version 0.9 - Oliver Hilsky
 
 TODO
@@ -10,8 +11,8 @@ safe/request values after restart/loss of connection
 */
 
 
-#define SN   "RGBW Led strip testSketch 3"
-#define SV   "v0.9"
+#define SN   "RGBW Fensterwand"
+#define SV   "v1.0 29042016"
 
 // Load mysensors library	
 #include <MySensor.h>	
@@ -20,7 +21,7 @@ safe/request values after restart/loss of connection
 
 // Arduino pin attached to driver pins
 #define RED_PIN 3 
-#define WHITE_PIN 4	// this is not a pwm pin! change it if you want pwm
+#define WHITE_PIN 9	// this is not a pwm pin! change it if you want pwm
 #define GREEN_PIN 5
 #define BLUE_PIN 6
 #define NUM_CHANNELS 4 // how many channels, RGBW=4 RGB=3...
@@ -33,8 +34,13 @@ safe/request values after restart/loss of connection
 const int pwmIntervals = 255;
 float R; // equation for dimming curve
 
+// change the pins to free up the pwm pin for led control
+#define RF24_CE_PIN   4 //<-- NOTE!!! changed, the default is 9
+#define RF24_CS_PIN   10  // default is 10
+#define RF24_PA_LEVEL RF24_PA_MAX
 
-MySensor gw;	
+MyTransportNRF24 transport(RF24_CE_PIN, RF24_CS_PIN, RF24_PA_LEVEL);
+MySensor gw(transport);	
    
 // Stores the current color settings
 byte channels[4] = {RED_PIN, GREEN_PIN, BLUE_PIN, WHITE_PIN};
@@ -202,9 +208,9 @@ void updateLights() {
   for (int i = 0; i < NUM_CHANNELS; i++) {
     if (isOn) {
       // normal fading
-      // analogWrite(channels[i], dimming / 100 * values[i]);
+      analogWrite(channels[i], dimming / 100.0 * values[i]);
       // non linear fading, idea from https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/
-      analogWrite(channels[i], pow (2, (values[i] / R)) - 1);
+      //analogWrite(channels[i], pow (2, (values[i] / R)) - 1);
     } else {
       analogWrite(channels[i], 0);
     }
