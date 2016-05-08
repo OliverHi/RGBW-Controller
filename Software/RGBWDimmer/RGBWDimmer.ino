@@ -80,6 +80,9 @@ void setup()
   // set up dimming
   R = (pwmIntervals * log10(2))/(log10(255));
 
+  // get old values if this is just a restart
+  gw.request(SENSOR_ID, V_RGBW);
+
   // init lights
   updateLights();
   
@@ -211,6 +214,7 @@ void updateLights() {
       analogWrite(channels[i], dimming / 100.0 * values[i]);
       // non linear fading, idea from https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/
       //analogWrite(channels[i], pow (2, (values[i] / R)) - 1);
+      analogWrite(channels[i], pow (2, ((dimming / 100.0 * values[i]) / R)) - 1);
     } else {
       analogWrite(channels[i], 0);
     }
