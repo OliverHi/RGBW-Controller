@@ -12,7 +12,7 @@ safe/request values after restart/loss of connection
 
 
 #define SN   "RGBW Fensterwand"
-#define SV   "v1.0 29042016"
+#define SV   "v1.0 27052016"
 
 // Load mysensors library	
 #include <MySensor.h>	
@@ -21,7 +21,7 @@ safe/request values after restart/loss of connection
 
 // Arduino pin attached to driver pins
 #define RED_PIN 3 
-#define WHITE_PIN 9	// this is not a pwm pin! change it if you want pwm
+#define WHITE_PIN 9
 #define GREEN_PIN 5
 #define BLUE_PIN 6
 #define NUM_CHANNELS 4 // how many channels, RGBW=4 RGB=3...
@@ -67,10 +67,7 @@ void setup()
   gw.sendSketchInfo(SN, SV);				
        
   // Register sensors (id, type, description, ack back)
-  gw.present(SENSOR_ID, S_RGBW_LIGHT, "RGBW test light", true);
-
-  // request current values from gateway/controller
-  //gw.request(SENSOR_ID, S_RGBW_LIGHT);
+  gw.present(SENSOR_ID, S_RGBW_LIGHT, "RGBW Wand", true);
 
   // Set all channels to output (pin number, type)
   for (int i = 0; i < NUM_CHANNELS; i++) {
@@ -210,11 +207,15 @@ void updateLights() {
   // set actual pin values
   for (int i = 0; i < NUM_CHANNELS; i++) {
     if (isOn) {
+
+      //byte dimmingVal = pow (2, (dimming / R)) - 1);
+
       // normal fading
       analogWrite(channels[i], dimming / 100.0 * values[i]);
+
       // non linear fading, idea from https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/
       //analogWrite(channels[i], pow (2, (values[i] / R)) - 1);
-      analogWrite(channels[i], pow (2, ((dimming / 100.0 * values[i]) / R)) - 1);
+      //analogWrite(channels[i], dimmingVal / 255.0 * values[i]);
     } else {
       analogWrite(channels[i], 0);
     }
