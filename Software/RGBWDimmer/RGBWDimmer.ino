@@ -11,8 +11,8 @@ safe/request values after restart/loss of connection
 */
 
 
-#define SN   "RGBW Fensterwand"
-#define SV   "v1.0 27052016"
+#define SN   "RGBW Schrankwand"
+#define SV   "v1.0 04072016"
 
 // Load mysensors library	
 #include <MySensor.h>	
@@ -67,7 +67,7 @@ void setup()
   gw.sendSketchInfo(SN, SV);				
        
   // Register sensors (id, type, description, ack back)
-  gw.present(SENSOR_ID, S_RGBW_LIGHT, "RGBW Wand", true);
+  gw.present(SENSOR_ID, S_RGBW_LIGHT, "RGBW light", true);
 
   // Set all channels to output (pin number, type)
   for (int i = 0; i < NUM_CHANNELS; i++) {
@@ -121,6 +121,9 @@ void incomingMessage(const MyMessage &message) {
       Serial.println("Dimming to ");
       Serial.println(message.getString());
       target_dimming = message.getByte();
+
+      // a new dimmer value also means on, no seperate signal gets send (by domoticz)
+    isOn = true;
   }
 
   // on / off message
@@ -139,7 +142,10 @@ void incomingMessage(const MyMessage &message) {
   // new color value
   else if (message.type == V_RGBW) {    
     const char * rgbvalues = message.getString();
-    inputToRGBW(rgbvalues);    
+    inputToRGBW(rgbvalues);  
+
+    // a new color also means on, no seperate signal gets send (by domoticz); needed e.g. for groups
+    isOn = true;  
   }  
 }
 
