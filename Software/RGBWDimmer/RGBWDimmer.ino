@@ -67,7 +67,7 @@ void setup()
   gw.sendSketchInfo(SN, SV);				
        
   // Register sensors (id, type, description, ack back)
-  gw.present(SENSOR_ID, S_RGBW_LIGHT, "RGBW light", true);
+  gw.present(SENSOR_ID, S_RGBW_LIGHT, SN, true);
 
   // Set all channels to output (pin number, type)
   for (int i = 0; i < NUM_CHANNELS; i++) {
