@@ -44,8 +44,8 @@ MySensor gw(transport);
    
 // Stores the current color settings
 byte channels[4] = {RED_PIN, GREEN_PIN, BLUE_PIN, WHITE_PIN};
-byte values[4] = {100, 100, 100, 100};
-byte target_values[4] = {100, 100, 100, 100}; 
+byte values[4] = {0, 0, 0, 255};
+byte target_values[4] = {0, 0, 0, 255}; 
 
 
 // stores dimming level
