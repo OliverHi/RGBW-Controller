@@ -213,15 +213,11 @@ void updateLights() {
   // set actual pin values
   for (int i = 0; i < NUM_CHANNELS; i++) {
     if (isOn) {
-
-      //byte dimmingVal = pow (2, (dimming / R)) - 1);
-
       // normal fading
-      analogWrite(channels[i], dimming / 100.0 * values[i]);
+      //analogWrite(channels[i], dimming / 100.0 * values[i]);
 
       // non linear fading, idea from https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/
-      //analogWrite(channels[i], pow (2, (values[i] / R)) - 1);
-      //analogWrite(channels[i], dimmingVal / 255.0 * values[i]);
+      analogWrite(channels[i], pow (2, (dimming / R)) - 1);
     } else {
       analogWrite(channels[i], 0);
     }
