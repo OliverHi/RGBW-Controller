@@ -39,7 +39,7 @@ LIBS:mysensors_regulators
 LIBS:mysensors_security
 LIBS:mysensors_sensors
 LIBS:irfz44n
-LIBS:irlml2502
+LIBS:RGBWController-cache
 EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
@@ -114,7 +114,7 @@ W
 Text GLabel 7050 1850 0    60   Input ~ 0
 R
 $Comp
-L IRLML2502 Q1
+L IRFZ44N Q1
 U 1 1 56E17E9D
 P 7700 1800
 F 0 "Q1" H 7900 1875 50  0000 L CNN
@@ -125,7 +125,7 @@ F 3 "" H 7700 1800 50  0000 L CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L IRLML2502 Q2
+L IRFZ44N Q2
 U 1 1 56E17F15
 P 8000 2300
 F 0 "Q2" H 8200 2375 50  0000 L CNN
@@ -136,7 +136,7 @@ F 3 "" H 8000 2300 50  0000 L CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L IRLML2502 Q3
+L IRFZ44N Q3
 U 1 1 56E17F51
 P 8300 2800
 F 0 "Q3" H 8500 2875 50  0000 L CNN
@@ -147,7 +147,7 @@ F 3 "" H 8300 2800 50  0000 L CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L IRLML2502 Q4
+L IRFZ44N Q4
 U 1 1 56E17F88
 P 8600 3300
 F 0 "Q4" H 8800 3375 50  0000 L CNN

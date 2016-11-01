@@ -1,4 +1,4 @@
-update=02.04.2016 18:17:07
+update=01.11.2016 20:00:15
 version=1
 last_client=kicad
 [pcbnew]
@@ -25,9 +25,19 @@ version=1
 NetIExt=net
 [general]
 version=1
+[schematic_editor]
+version=1
+PageLayoutDescrFile=
+PlotDirectoryName=
+SubpartIdSeparator=0
+SubpartFirstId=65
+NetFmtName=
+SpiceForceRefPrefix=0
+SpiceUseNetNumbers=0
+LabSize=60
 [eeschema]
 version=1
-LibDir=C:/Users/Oliver/Documents/git/mysensors_symbols
+LibDir=C:/Users/Oliver/Documents/git/mysensors_symbols;../../../KiCad libraries/ownParts
 [eeschema/libraries]
 LibName1=power
 LibName2=device
@@ -69,13 +79,4 @@ LibName37=C:/Users/Oliver/Documents/git/mysensors_symbols/mysensors_regulators
 LibName38=C:/Users/Oliver/Documents/git/mysensors_symbols/mysensors_security
 LibName39=C:/Users/Oliver/Documents/git/mysensors_symbols/mysensors_sensors
 LibName40=C:/Users/Oliver/Documents/KiCad libraries/ownParts/irfz44n
-[schematic_editor]
-version=1
-PageLayoutDescrFile=
-PlotDirectoryName=
-SubpartIdSeparator=0
-SubpartFirstId=65
-NetFmtName=
-SpiceForceRefPrefix=0
-SpiceUseNetNumbers=0
-LabSize=60
+LibName41=irlml2502
