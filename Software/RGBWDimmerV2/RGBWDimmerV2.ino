@@ -3,7 +3,7 @@ Based on the MySensors Project: http://www.mysensors.org
 
 This sketch controls a (analog)RGBW strip by listening to new color/dimmer/status values from a (domoticz/openhab/Homeassistant) controller and then fading to the new color.
 
-Version 2.2 - Added initial state messages to the controller to support home-assistant, also added better nonlinear fading (thanks to Jan Gatzke from the forum)
+Version 2.2 - Added initial state messages to the controller and ack messages to support home-assistant, also added better nonlinear fading (thanks to Jan Gatzke from the forum)
 Version 2.1 - Changed conversion to also work with openhab(2)
 Version 2.0 - Updated to MySensors 2 and changed fading
 Version 1.0 - Changed pins and gw definition
@@ -31,10 +31,8 @@ Version 0.9 - Oliver Hilsky
 #include <MySensors.h>
 #include <Vcc.h>
 
-// IDs for the presentation at the gateway
+// ID for the presentation at the gateway
 #define RGBW_ID 1
-#define DIMMER_ID 2
-#define STATUS_ID 3
 
 // Arduino pin attached to driver pins
 #define RED_PIN 3 
@@ -46,14 +44,20 @@ Version 0.9 - Oliver Hilsky
 // Smooth stepping between the values
 #define STEP 1
 #define INTERVAL 10
+
+#define ACK_COMMANDS 0 // set to 1/true if you use home assistant. This will answer every message with the same, disable otherwise
    
 // Stores the current color settings
 byte channels[4] = {RED_PIN, GREEN_PIN, BLUE_PIN, WHITE_PIN};
-byte values[4] = {0, 0, 0, 255};
+byte values[4] = {0, 0, 0, 0}; // initial values -> makes white fade up to 100%
 byte target_values[4] = {0, 0, 0, 255};
 //Stores corrected values for each step from 0 to 255. See https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/
 byte converted_values[256] = {0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3,3,3,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5,5,6,6,6,6,6,6,7,7,7,7,7,7,8,8,8,8,8,9,9,9,9,9,10,10,10,10,11,11,11,11,12,12,12,13,13,13,13,14,14,14,15,15,15,16,16,17,17,17,18,18,19,19,20,20,20,21,21,22,22,23,23,24,24,25,26,26,27,27,28,29,29,30,31,31,32,33,34,34,35,36,37,38,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,54,55,56,57,58,60,61,62,64,65,67,68,70,71,73,75,76,78,80,81,83,85,87,89,91,93,95,97,99,101,104,106,108,111,113,116,118,121,123,126,129,132,135,138,141,144,147,150,154,157,161,164,168,171,175,179,183,187,191,195,200,204,209,213,218,223,228,233,238,243,249,255};
 
+// Messages
+MyMessage statusMessage(RGBW_ID, V_STATUS);
+MyMessage dimmerMessage(RGBW_ID, V_DIMMER);
+MyMessage colorMessage (RGBW_ID, V_RGBW);
 
 // stores dimming level
 byte dimming = 100;
@@ -86,11 +90,6 @@ void setup() {
 
   // init lights
   updateLights();
-  
-  // debug
-  if (isOn) {
-    Serial.println("RGBW is running...");
-  }
  
   Serial.println("Waiting for messages...");  
 }
@@ -114,9 +113,9 @@ void loop()
 }
 
 void sendinitialValuesToGateway() {
-  send(MyMessage(RGBW_ID, V_RGBW).set("000000ff")); // full white
-  send(MyMessage(STATUS_ID, V_STATUS).set(isOn)); // on
-  send(MyMessage(DIMMER_ID, V_DIMMER).set(target_dimming)); // dimmed to start level
+  send(colorMessage.set("000000ff")); // full white
+  send(statusMessage.set(isOn)); // on
+  send(dimmerMessage.set(target_dimming)); // dimmed to start level
 }
 
 // callback function for incoming messages
@@ -136,36 +135,63 @@ void receive(const MyMessage &message) {
   else if (message.type == V_DIMMER) {
     Serial.println("Dimming to ");
     Serial.println(message.getString());
-    target_dimming = message.getByte();
-    send(MyMessage(DIMMER_ID, V_DIMMER).set(target_dimming)); // send acknowledgement
-    isOn = true; // a new dimmer value also means on, no seperate signal gets send (by domoticz)
+    updateDimmer(message.getByte());
   }
 
   // on / off message
   else if (message.type == V_STATUS) {
-    Serial.print("Turning light ");
-
-    isOn = message.getInt();
-    send(MyMessage(STATUS_ID, V_STATUS).set(isOn)); // send acknowledgement
-
-    if (isOn) {
-      Serial.println("on");
-    } else {
-      Serial.println("off");
-    }
+    updateStatus(message.getInt());
+    
+    String statusMsg = "Turning light ";
+    statusMsg += (message.getInt() == 0 ? ("on") : ("off"));
+    Serial.println(statusMsg);
   }
 
   // new color value
   else if (message.type == V_RGBW) {    
     Serial.println("Got new color");
 
-    const char * rgbvalues = message.getString();
-    inputToRGBW(rgbvalues);  
-    send(MyMessage(RGBW_ID, V_RGBW).set(rgbvalues)); // send acknowledgement
-
-    // a new color also means on, no seperate signal gets send (by domoticz); needed e.g. for groups
-    isOn = true;  
+    updateColor(message.getString());
   }  
+}
+
+void updateDimmer(byte newDimValue) {
+  target_dimming = newDimValue;
+
+  if (ACK_COMMANDS) {
+    send(dimmerMessage.set(newDimValue)); // send acknowledgement
+  }
+
+  if (newDimValue > 0) {
+    isOn = true; // a new dimmer value also means on, no seperate signal gets send (by domoticz)
+
+    if (ACK_COMMANDS) {
+      send(statusMessage.set(isOn)); // send acknowledgement
+    }
+  }
+}
+
+void updateStatus(int newStatus) {
+  isOn = newStatus;
+
+  if (ACK_COMMANDS) {
+    send(statusMessage.set(newStatus)); // send acknowledgement
+  }
+}
+
+void updateColor(const char* newColor) {
+  inputToRGBW(newColor);  
+
+  if (ACK_COMMANDS) {
+    send(colorMessage.set(newColor)); // send acknowledgement
+  }
+
+  // a new color also means on, no seperate signal gets send (by domoticz); needed e.g. for groups
+  isOn = true; 
+  
+  if (ACK_COMMANDS) {
+    send(statusMessage.set(isOn)); // send acknowledgement
+  }
 }
 
 // this gets called every INTERVAL milliseconds and updates the current pwm levels for all colors
@@ -231,10 +257,10 @@ void updateLights() {
   for (int i = 0; i < NUM_CHANNELS; i++) {
     if (isOn) {
       // normal fading
-      // analogWrite(channels[i], dimming / 100.0 * values[i]);
+      analogWrite(channels[i], dimming / 100.0 * values[i]);
 
-      //Fading with corrected values see https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/
-      analogWrite(channels[i], dimming / 100.0 * converted_values[values[i]]);
+      //Fading with corrected values see https://diarmuid.ie/blog/pwm-exponential-led-fading-on-arduino-or-other-platforms/ - currently crashing
+      //analogWrite(channels[i], dimming / 100.0 * converted_values[values[i]]);
     } else {
       analogWrite(channels[i], 0);
     }
@@ -253,7 +279,7 @@ void inputToRGBW(const char * input) {
     target_values[1] = fromhex (& input [2]);
     target_values[2] = fromhex (& input [4]);
     target_values[3] = 0;
-  } else if (strlen(input) == 8) { // from openhab
+  } else if (strlen(input) == 8) { // from openhab / home assistant
     Serial.println("new rgbw value 8");
     target_values[0] = fromhex (& input [0]);
     target_values[1] = fromhex (& input [2]);
