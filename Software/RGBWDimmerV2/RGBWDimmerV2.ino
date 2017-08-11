@@ -143,7 +143,7 @@ void receive(const MyMessage &message) {
     updateStatus(message.getInt());
     
     String statusMsg = "Turning light ";
-    statusMsg += (message.getInt() == 0 ? ("on") : ("off"));
+    statusMsg += (message.getInt() == 0 ? ("off") : ("on"));
     Serial.println(statusMsg);
   }
 
